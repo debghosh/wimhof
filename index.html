@@ -84,7 +84,7 @@
             position: absolute;
             bottom: 20px;
             font-size: 0.9rem;
-            color: #666;
+            color: #eaf0ea;
         }
 
         /* --- NEW STYLES FOR INSTRUCTIONS MODAL --- */
@@ -190,10 +190,36 @@
             font-size: 0.9rem;
             margin-top: 20px;
         }
+        /* ... existing styles ... */
+
+        #app-title {
+            position: absolute;
+            top: 20px;       /* Matches the button's top alignment */
+            width: 100%;
+            text-align: center;
+            margin: 0;
+            color: #ffeb3b;  /* Bold Yellow */
+            font-weight: bold;
+            font-size: 1.5rem;
+            line-height: 40px; /* Matches button height for vertical centering */
+            z-index: 5;
+            pointer-events: none; /* Allows clicking through if it overlaps slightly */
+        }
+
+        /* Update this existing rule to ensure title doesn't overlap on small screens */
+        @media (max-width: 600px) {
+            #app-title {
+                font-size: 1.2rem;
+                padding-right: 60px; /* Make room for the button */
+                padding-left: 20px;
+            }
+        }
 
     </style>
 </head>
 <body>
+
+    <h1 id="app-title">Wim Hof Breathing Assistant</h1>
 
     <button id="info-btn" onclick="toggleModal()">?</button>
 
