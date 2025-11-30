@@ -18,6 +18,7 @@
             overflow: hidden;
         }
 
+        /* YOUR UPDATED CSS */
         #circle-container {
             position: relative;
             width: 300px;
@@ -36,6 +37,8 @@
             transition: all 0.1s ease;
             opacity: 0.8;
             box-shadow: 0 0 30px #00bcd4;
+            /* Ensure circle doesn't get cut off if it grows larger than container height */
+            z-index: 1; 
         }
 
         .instruction-text {
@@ -44,6 +47,7 @@
             margin-bottom: 10px;
             text-align: center;
             min-height: 50px;
+            z-index: 2;
         }
 
         .sub-text {
@@ -51,6 +55,7 @@
             color: #aaaaaa;
             margin-bottom: 30px;
             min-height: 30px;
+            z-index: 2;
         }
 
         button {
@@ -63,6 +68,7 @@
             cursor: pointer;
             transition: transform 0.2s;
             font-weight: bold;
+            z-index: 10;
         }
 
         button:hover {
@@ -70,24 +76,126 @@
             background-color: #e0e0e0;
         }
 
-        button:active {
-            transform: scale(0.95);
-        }
-
         .hidden {
             display: none;
         }
 
-        /* Stats at the bottom */
         .stats {
             position: absolute;
             bottom: 20px;
             font-size: 0.9rem;
             color: #666;
         }
+
+        /* --- NEW STYLES FOR INSTRUCTIONS MODAL --- */
+        #info-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: transparent;
+            color: #666;
+            border: 2px solid #666;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            padding: 0;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #info-btn:hover {
+            color: white;
+            border-color: white;
+            background: rgba(255,255,255,0.1);
+        }
+
+        #modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        #modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: linear-gradient(145deg, #2a2a2a, #222);
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: #00bcd4;
+        }
+
+        .step-item {
+            margin-bottom: 20px;
+            padding-left: 15px;
+            border-left: 3px solid #00bcd4;
+        }
+
+        .step-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #fff;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .step-desc {
+            color: #ccc;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .close-modal {
+            margin-top: 20px;
+            background: #00bcd4;
+            color: white;
+            width: 100%;
+        }
+        
+        .close-modal:hover {
+            background-color: #0097a7;
+        }
+
+        .warning {
+            background: rgba(255, 87, 34, 0.1);
+            border: 1px solid #ff5722;
+            color: #ffccbc;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+
     </style>
 </head>
 <body>
+
+    <button id="info-btn" onclick="toggleModal()">?</button>
 
     <div id="circle-container">
         <div id="circle"></div>
@@ -102,12 +210,40 @@
         <span id="round-display">Round: 1</span> | <span id="breath-display">Breaths: 0/30</span>
     </div>
 
+    <div id="modal-overlay">
+        <div class="modal-content">
+            <h2>The Technique</h2>
+            <p style="color: #aaa; margin-bottom: 25px;">The Wim Hof Method breathing technique is designed to increase energy, reduce stress levels, and augment the immune response.</p>
+            
+            <div class="step-item">
+                <span class="step-title">Phase 1: Controlled Hyperventilation</span>
+                <span class="step-desc">Take 30 power breaths. Inhale deeply through the nose or mouth (belly, then chest), and let the breath go unforced. Follow the blue circle.</span>
+            </div>
+
+            <div class="step-item">
+                <span class="step-title">Phase 2: Retention (The Hold)</span>
+                <span class="step-desc">After the 30th exhale, stop breathing and hold. Hold for as long as you comfortably can. This resets your nervous system.</span>
+            </div>
+
+            <div class="step-item">
+                <span class="step-title">Phase 3: Recovery Breath</span>
+                <span class="step-desc">When you feel the urge to breathe, take a deep breath in and hold for 15 seconds. Squeeze your head and chest gently to direct energy.</span>
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ Safety First:</strong> Never practice this near water, while driving, or standing up. You may faint. Practice sitting or lying down safely.
+            </div>
+
+            <button class="close-modal" onclick="toggleModal()">Got it</button>
+        </div>
+    </div>
+
     <script>
         // Configuration
         const TOTAL_BREATHS = 30;
-        const RECOVERY_TIME = 15; // seconds
-        const BREATH_IN_TIME = 1600; // ms
-        const BREATH_OUT_TIME = 1400; // ms
+        const RECOVERY_TIME = 15; 
+        const BREATH_IN_TIME = 1600; 
+        const BREATH_OUT_TIME = 1400; 
         
         // State variables
         let currentRound = 1;
@@ -124,9 +260,14 @@
         const btn = document.getElementById('action-btn');
         const roundDisplay = document.getElementById('round-display');
         const breathDisplay = document.getElementById('breath-display');
+        const modal = document.getElementById('modal-overlay');
 
-        // Audio Context for beeps
+        // Audio Context
         let audioCtx;
+
+        function toggleModal() {
+            modal.classList.toggle('active');
+        }
 
         function initAudio() {
             if (!audioCtx) {
@@ -171,16 +312,15 @@
             // Breathe In
             mainText.innerText = "Breathe In";
             timerText.innerText = "Expand belly & chest";
-            circle.style.transform = "scale(3)"; // Expand
+            circle.style.transform = "scale(3)"; 
             playTone(400, 'sine', 0.1);
 
             setTimeout(() => {
                 // Breathe Out
                 mainText.innerText = "Let Go";
                 timerText.innerText = "Just relax...";
-                circle.style.transform = "scale(1)"; // Contract
+                circle.style.transform = "scale(1)"; 
                 
-                // If it's the last breath, prepare for retention
                 if(breathCount === TOTAL_BREATHS) {
                      playTone(600, 'sine', 0.3);
                 }
@@ -193,7 +333,7 @@
             mainText.innerText = "STOP & HOLD";
             timerText.innerText = "00:00";
             circle.style.transform = "scale(1)";
-            circle.style.backgroundColor = "#ff5722"; // Orange for hold
+            circle.style.backgroundColor = "#ff5722"; 
             circle.style.boxShadow = "0 0 30px #ff5722";
             
             btn.innerText = "I need to breathe!";
@@ -221,7 +361,7 @@
         function startRecovery() {
             mainText.innerText = "Breathe In & HOLD";
             circle.style.transform = "scale(3)";
-            circle.style.backgroundColor = "#4caf50"; // Green for recovery
+            circle.style.backgroundColor = "#4caf50"; 
             circle.style.boxShadow = "0 0 30px #4caf50";
             
             btn.classList.add('hidden');
@@ -244,7 +384,7 @@
         function finishRound() {
             mainText.innerText = "Exhale & Relax";
             circle.style.transform = "scale(1)";
-            circle.style.backgroundColor = "#00bcd4"; // Back to blue
+            circle.style.backgroundColor = "#00bcd4"; 
             circle.style.boxShadow = "0 0 30px #00bcd4";
             
             playTone(300, 'sine', 0.5);
