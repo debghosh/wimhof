@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wim Hof Breathing Assistant</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #circle-container {
+            position: relative;
+            width: 300px;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        #circle {
+            width: 100px;
+            height: 100px;
+            background-color: #00bcd4;
+            border-radius: 50%;
+            transition: all 0.1s ease;
+            opacity: 0.8;
+            box-shadow: 0 0 30px #00bcd4;
+        }
+
+        .instruction-text {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+            min-height: 50px;
+        }
+
+        .sub-text {
+            font-size: 1.2rem;
+            color: #aaaaaa;
+            margin-bottom: 30px;
+            min-height: 30px;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background-color: #ffffff;
+            color: #1a1a1a;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background-color: #e0e0e0;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Stats at the bottom */
+        .stats {
+            position: absolute;
+            bottom: 20px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="circle-container">
+        <div id="circle"></div>
+    </div>
+
+    <div class="instruction-text" id="main-text">Ready?</div>
+    <div class="sub-text" id="timer-text">Round 1</div>
+
+    <button id="action-btn" onclick="startBreathing()">Start Session</button>
+
+    <div class="stats">
+        <span id="round-display">Round: 1</span> | <span id="breath-display">Breaths: 0/30</span>
+    </div>
+
+    <script>
+        // Configuration
+        const TOTAL_BREATHS = 30;
+        const RECOVERY_TIME = 15; // seconds
+        const BREATH_IN_TIME = 1600; // ms
+        const BREATH_OUT_TIME = 1400; // ms
+        
+        // State variables
+        let currentRound = 1;
+        let breathCount = 0;
+        let isRunning = false;
+        let retentionTimer = null;
+        let retentionSeconds = 0;
+        let recoveryTimer = null;
+        
+        // DOM Elements
+        const circle = document.getElementById('circle');
+        const mainText = document.getElementById('main-text');
+        const timerText = document.getElementById('timer-text');
+        const btn = document.getElementById('action-btn');
+        const roundDisplay = document.getElementById('round-display');
+        const breathDisplay = document.getElementById('breath-display');
+
+        // Audio Context for beeps
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playTone(freq, type, duration) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function startBreathing() {
+            initAudio();
+            isRunning = true;
+            breathCount = 0;
+            btn.classList.add('hidden');
+            mainText.innerText = "Breathe In";
+            timerText.innerText = "Fully in...";
+            
+            runBreathCycle();
+        }
+
+        function runBreathCycle() {
+            if (breathCount >= TOTAL_BREATHS) {
+                startRetention();
+                return;
+            }
+
+            breathCount++;
+            breathDisplay.innerText = `Breaths: ${breathCount}/${TOTAL_BREATHS}`;
+
+            // Breathe In
+            mainText.innerText = "Breathe In";
+            timerText.innerText = "Expand belly & chest";
+            circle.style.transform = "scale(3)"; // Expand
+            playTone(400, 'sine', 0.1);
+
+            setTimeout(() => {
+                // Breathe Out
+                mainText.innerText = "Let Go";
+                timerText.innerText = "Just relax...";
+                circle.style.transform = "scale(1)"; // Contract
+                
+                // If it's the last breath, prepare for retention
+                if(breathCount === TOTAL_BREATHS) {
+                     playTone(600, 'sine', 0.3);
+                }
+
+                setTimeout(runBreathCycle, BREATH_OUT_TIME);
+            }, BREATH_IN_TIME);
+        }
+
+        function startRetention() {
+            mainText.innerText = "STOP & HOLD";
+            timerText.innerText = "00:00";
+            circle.style.transform = "scale(1)";
+            circle.style.backgroundColor = "#ff5722"; // Orange for hold
+            circle.style.boxShadow = "0 0 30px #ff5722";
+            
+            btn.innerText = "I need to breathe!";
+            btn.classList.remove('hidden');
+            btn.onclick = endRetention;
+
+            retentionSeconds = 0;
+            const startTime = Date.now();
+
+            retentionTimer = setInterval(() => {
+                const delta = Date.now() - startTime;
+                retentionSeconds = Math.floor(delta / 1000);
+                
+                const mins = Math.floor(retentionSeconds / 60).toString().padStart(2, '0');
+                const secs = (retentionSeconds % 60).toString().padStart(2, '0');
+                timerText.innerText = `${mins}:${secs}`;
+            }, 100);
+        }
+
+        function endRetention() {
+            clearInterval(retentionTimer);
+            startRecovery();
+        }
+
+        function startRecovery() {
+            mainText.innerText = "Breathe In & HOLD";
+            circle.style.transform = "scale(3)";
+            circle.style.backgroundColor = "#4caf50"; // Green for recovery
+            circle.style.boxShadow = "0 0 30px #4caf50";
+            
+            btn.classList.add('hidden');
+            playTone(500, 'triangle', 0.5);
+
+            let timeLeft = RECOVERY_TIME;
+            timerText.innerText = `Hold for ${timeLeft}s`;
+
+            recoveryTimer = setInterval(() => {
+                timeLeft--;
+                timerText.innerText = `Hold for ${timeLeft}s`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(recoveryTimer);
+                    finishRound();
+                }
+            }, 1000);
+        }
+
+        function finishRound() {
+            mainText.innerText = "Exhale & Relax";
+            circle.style.transform = "scale(1)";
+            circle.style.backgroundColor = "#00bcd4"; // Back to blue
+            circle.style.boxShadow = "0 0 30px #00bcd4";
+            
+            playTone(300, 'sine', 0.5);
+            
+            currentRound++;
+            roundDisplay.innerText = `Round: ${currentRound}`;
+            breathCount = 0;
+            breathDisplay.innerText = `Breaths: 0/${TOTAL_BREATHS}`;
+
+            btn.innerText = "Start Next Round";
+            btn.classList.remove('hidden');
+            btn.onclick = startBreathing;
+            
+            timerText.innerText = "Round Complete";
+        }
+    </script>
+</body>
+</html>
